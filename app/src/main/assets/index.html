@@ -1,23 +1,463 @@
-<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0f172a"><title>Engineering Study AI</title><style>
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#eef2ff;color:#111827}header{background:linear-gradient(135deg,#0f172a,#312e81);color:#fff;padding:18px 14px;position:sticky;top:0;z-index:2}h1{font-size:22px;margin:0}header p{font-size:12px;opacity:.8;margin:4px 0}main{padding:14px;max-width:900px;margin:auto}.card{background:#fff;border:1px solid #dbe3ef;border-radius:17px;padding:15px;margin-bottom:13px;box-shadow:0 7px 24px #0f172a0b}button,input,textarea,select{font:inherit}button{border:0;border-radius:11px;padding:11px 13px;font-weight:700}.primary{background:#2563eb;color:#fff}.secondary{background:#eef2ff;color:#3730a3}.danger{background:#fee2e2;color:#991b1b}input,textarea,select{width:100%;padding:11px;border:1px solid #dbe3ef;border-radius:11px;background:#fff}textarea{min-height:110px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1}.chat{min-height:250px;max-height:55vh;overflow:auto}.msg{padding:11px;border-radius:13px;margin:8px 0;white-space:pre-wrap;line-height:1.55}.u{background:#dbeafe;margin-left:12%}.a{background:#f8fafc;border:1px solid #dbe3ef;margin-right:8%}.muted{font-size:12px;color:#64748b;line-height:1.5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}@media(max-width:600px){.grid{grid-template-columns:1fr}}.status{padding:10px;border-radius:11px;background:#f8fafc;font-size:13px}
-</style></head><body><header><h1>🎓 Engineering Study AI</h1><p>Highway Construction Engineering • Personal Android Edition</p></header><main>
-<div class="card"><h2>🔑 OpenAI API key</h2><p class="muted">For personal use, the key is stored locally on this phone. Do not share this APK or your key with others.</p><input id="key" type="password" placeholder="sk-…"><div class="row" style="margin-top:8px"><button class="primary" onclick="saveKey()">Save key</button><button class="secondary" onclick="showStatus()">Check status</button></div></div>
-<div class="card"><h2>📚 Your Highway Engineering notes</h2><p class="muted">Choose your Highway Construction Engineering PDF from Downloads or Files. The app uploads it to your OpenAI account once and then searches it for each question.</p><button class="primary" onclick="Android.useBundledPdf()">📘 Use included PDF</button><button class="secondary" onclick="Android.pickPdf()" style="margin-left:6px">📂 Choose another PDF</button><button class="secondary" onclick="prepare()" style="margin-left:6px">⚡ Prepare AI Notes</button><button class="secondary" onclick="Android.openPdf()" style="margin-left:6px">📄 Open PDF</button><div id="status" class="status" style="margin-top:9px">Not checked yet.</div></div>
-<div class="card"><h2>🤖 AI Tutor</h2><div class="row"><select id="mode"><option value="explain">Explain</option><option value="exam">Exam answer</option><option value="numerical">Numerical solution</option><option value="quiz">Quiz</option><option value="flashcards">Flashcards</option><option value="viva">Viva</option><option value="summary">Summary</option><option value="compare">Compare</option></select></div><textarea id="q" placeholder="Example: Explain the CBR test from my Highway Engineering notes."></textarea><div class="row" style="margin-top:8px"><button class="primary" onclick="ask()">Ask AI</button><button class="secondary" onclick="quick('Create 10 important exam questions from the notes.','quiz')">10 questions</button><button class="secondary" onclick="quick('Make flashcards for the current Highway Engineering topic.','flashcards')">Flashcards</button></div></div>
-<div class="card"><h2>💬 Conversation</h2><div id="chat" class="chat"></div></div>
-<div class="card"><h2>🧰 Study shortcuts</h2><div class="grid"><button class="secondary" onclick="quick('Teach me the current topic step by step as a beginner.','explain')">📘 Teach me</button><button class="secondary" onclick="quick('Give an exam-ready answer with headings, definitions and key points from the notes.','exam')">📝 Exam answer</button><button class="secondary" onclick="quick('Create a 15-question mock test from the uploaded notes and put answers at the end.','quiz')">🎯 Mock test</button><button class="secondary" onclick="quick('Act as a viva examiner and ask me one question from the notes.','viva')">🎤 Viva</button></div></div>
-</main><script>
-let history=[];
-function saveKey(){const k=document.getElementById('key').value.trim();if(!k){setStatus('Please enter your API key.');return}Android.saveApiKey(k);setStatus('API key saved on this device.');}
-function setStatus(t){document.getElementById('status').textContent=t}
-function showStatus(){Android.status()}
-function prepare(){Android.setup();setStatus('Starting PDF preparation… Keep the app open while the PDF is indexed.');}
-function add(role,text){const d=document.createElement('div');d.className='msg '+(role==='user'?'u':'a');d.textContent=text;document.getElementById('chat').appendChild(d);document.getElementById('chat').scrollTop=1e9}
-function ask(){const q=document.getElementById('q').value.trim();if(!q)return;const mode=document.getElementById('mode').value;add('user',q);history.push({role:'user',content:q});document.getElementById('q').value='';add('assistant','🔎 Searching your notes…');Android.ask(q,mode,JSON.stringify(history.slice(-8)));}
-function quick(q,m){document.getElementById('q').value=q;document.getElementById('mode').value=m;ask()}
-window.onStatus=function(s){const j=JSON.parse(s);setStatus(j.configured?(j.ready?'✅ AI + PDF search is ready.':(j.pdf?(j.bundled?'📘 Included Design of Highway Pavements PDF selected. Tap Prepare AI Notes.':'📄 PDF selected. Tap Prepare AI Notes.'):'API key saved. Tap Use included PDF or Choose another PDF.')):'🔑 Add your API key above.')}
-window.onProgress=function(s){setStatus(s)}
-window.onSetup=function(s){const j=JSON.parse(s);setStatus(j.ok?'✅ PDF indexed. AI is ready to answer from your notes.':'❌ '+j.error)}
-window.onAnswer=function(s){const j=JSON.parse(s);const c=document.getElementById('chat');if(c.lastElementChild)c.lastElementChild.remove();if(j.ok){add('assistant',j.text);history.push({role:'assistant',content:j.text})}else add('assistant','❌ '+j.error)}
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<title>Engineering Study AI</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:#eef2ff;
+  color:#172033;
+}
+header{
+  background:linear-gradient(135deg,#0f172a,#1e3a8a);
+  color:white;
+  padding:24px 18px;
+}
+header h1{margin:0;font-size:26px}
+header p{margin:6px 0 0;opacity:.82;font-size:14px}
+main{max-width:900px;margin:auto;padding:16px}
+.card{
+  background:white;
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 5px 20px rgba(15,23,42,.08);
+}
+h2{margin:0 0 10px;font-size:19px}
+.muted{color:#64748b;font-size:14px;line-height:1.5}
+.status{
+  background:#f1f5f9;
+  padding:12px;
+  border-radius:12px;
+  margin-top:12px;
+  font-size:14px;
+}
+input,textarea,select{
+  width:100%;
+  border:1px solid #cbd5e1;
+  border-radius:12px;
+  padding:12px;
+  font:inherit;
+  margin-top:8px;
+  background:white;
+}
+textarea{min-height:105px;resize:vertical}
+button{
+  border:0;
+  border-radius:12px;
+  padding:12px 15px;
+  margin:6px 4px 0 0;
+  font-weight:700;
+  cursor:pointer;
+  background:#2563eb;
+  color:white;
+}
+button.secondary{
+  background:#e2e8f0;
+  color:#172033;
+}
+button.success{background:#15803d}
+button.warn{background:#d97706}
+button:active{transform:scale(.98)}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.mode-buttons{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin:10px 0;
+}
+.mode-buttons button{
+  margin:0;
+  background:#e2e8f0;
+  color:#334155;
+}
+.mode-buttons button.active{
+  background:#2563eb;
+  color:white;
+}
+.chat{
+  min-height:160px;
+  max-height:430px;
+  overflow-y:auto;
+  padding:8px;
+  background:#f8fafc;
+  border-radius:14px;
+}
+.msg{
+  padding:12px 14px;
+  border-radius:14px;
+  margin:8px 0;
+  line-height:1.55;
+  white-space:pre-wrap;
+}
+.user{
+  background:#dbeafe;
+  margin-left:12%;
+}
+.assistant{
+  background:white;
+  border:1px solid #e2e8f0;
+  margin-right:6%;
+}
+.empty{
+  text-align:center;
+  color:#64748b;
+  padding:35px 15px;
+}
+.shortcut{
+  width:100%;
+  text-align:left;
+  background:#f8fafc;
+  color:#334155;
+  border:1px solid #e2e8f0;
+  margin:5px 0;
+}
+footer{
+  text-align:center;
+  color:#64748b;
+  font-size:12px;
+  padding:15px;
+}
+@media(max-width:650px){
+  .mode-buttons{grid-template-columns:repeat(2,1fr)}
+  .user{margin-left:4%}
+  .assistant{margin-right:4%}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>📚 Engineering Study AI</h1>
+  <p>Highway Construction Engineering • Personal Study Assistant</p>
+</header>
+
+<main>
+
+<section class="card">
+  <h2>🔐 OpenAI API</h2>
+  <div class="muted">
+    Your API key is stored locally on this phone. Never share your key with anyone.
+  </div>
+
+  <input id="key" type="password" placeholder="sk-...">
+
+  <div class="row">
+    <button onclick="saveKey()">Save Key</button>
+    <button class="secondary" onclick="checkStatus()">Check Status</button>
+  </div>
+
+  <div id="status" class="status">Checking app status...</div>
+</section>
+
+
+<section class="card">
+  <h2>📖 Highway Engineering Notes</h2>
+
+  <div class="muted">
+    Select the PDF you want the AI to study. The selected PDF must be prepared before asking questions.
+  </div>
+
+  <div class="row">
+    <button onclick="useIncluded()">Use Included PDF</button>
+    <button class="secondary" onclick="choosePdf()">Choose Another PDF</button>
+    <button class="success" onclick="preparePdf()">Prepare AI Notes</button>
+    <button class="secondary" onclick="openPdf()">Open PDF</button>
+  </div>
+</section>
+
+
+<section class="card">
+  <h2>🧠 AI Tutor</h2>
+
+  <div class="muted">
+    Choose how you want the AI to help you.
+  </div>
+
+  <div class="mode-buttons">
+    <button id="mode-explain" class="active" onclick="setMode('Explain')">📘 Explain</button>
+    <button id="mode-exam" onclick="setMode('Exam Answer')">📝 Exam</button>
+    <button id="mode-numerical" onclick="setMode('Numerical')">🔢 Numerical</button>
+    <button id="mode-mcq" onclick="setMode('MCQ')">❓ MCQ</button>
+  </div>
+
+  <div class="status">
+    Current mode: <strong id="modeLabel">Explain</strong>
+  </div>
+
+  <textarea id="question"
+    placeholder="Ask your Highway Engineering question here..."></textarea>
+
+  <button onclick="askAI()" style="width:100%;margin-top:10px">
+    🚀 Ask AI
+  </button>
+</section>
+
+
+<section class="card">
+  <h2>💬 Conversation</h2>
+
+  <div id="chat" class="chat">
+    <div class="empty">
+      Your questions and AI answers will appear here.
+    </div>
+  </div>
+
+  <button class="secondary" onclick="clearChat()">
+    🗑 Clear Conversation
+  </button>
+</section>
+
+
+<section class="card">
+  <h2>⚡ Study Shortcuts</h2>
+
+  <button class="shortcut"
+    onclick="quickAsk('Explain CBR in simple language.')">
+    📘 Explain CBR
+  </button>
+
+  <button class="shortcut"
+    onclick="quickAsk('Explain Westergaard theory step by step.')">
+    📐 Explain Westergaard Theory
+  </button>
+
+  <button class="shortcut"
+    onclick="quickAsk('Give me an exam-ready answer about pavement design.')">
+    📝 Pavement Design — Exam Answer
+  </button>
+
+  <button class="shortcut"
+    onclick="quickAsk('Create 10 MCQs from the highway engineering notes with answers and explanations.')">
+    ❓ Generate 10 MCQs
+  </button>
+
+  <button class="shortcut"
+    onclick="quickAsk('Give me a numerical problem related to pavement design and solve it step by step.')">
+    🔢 Practice Numerical
+  </button>
+</section>
+
+</main>
+
+<footer>
+  Engineering Study AI • Personal Civil Engineering Study App
+</footer>
+
+
+<script>
+
+let history = [];
+let currentMode = "Explain";
+
+
+function saveKey(){
+  const k = document.getElementById("key").value.trim();
+
+  if(!k){
+    setStatus("Please enter your OpenAI API key.");
+    return;
+  }
+
+  Android.saveApiKey(k);
+  setStatus("✅ API key saved on this device.");
+  document.getElementById("key").value = "";
+}
+
+
+function setStatus(t){
+  document.getElementById("status").textContent = t;
+}
+
+
+function checkStatus(){
+  Android.status();
+}
+
+
+function useIncluded(){
+  Android.useBundledPdf();
+}
+
+
+function choosePdf(){
+  Android.pickPdf();
+}
+
+
+function preparePdf(){
+  setStatus("Preparing your PDF. Please wait...");
+  Android.setup();
+}
+
+
+function openPdf(){
+  Android.openPdf();
+}
+
+
+function setMode(mode){
+
+  currentMode = mode;
+
+  document.getElementById("modeLabel").textContent = mode;
+
+  document.querySelectorAll(".mode-buttons button")
+    .forEach(b => b.classList.remove("active"));
+
+  if(mode === "Explain")
+    document.getElementById("mode-explain").classList.add("active");
+
+  if(mode === "Exam Answer")
+    document.getElementById("mode-exam").classList.add("active");
+
+  if(mode === "Numerical")
+    document.getElementById("mode-numerical").classList.add("active");
+
+  if(mode === "MCQ")
+    document.getElementById("mode-mcq").classList.add("active");
+}
+
+
+function addMessage(role,text){
+
+  const chat = document.getElementById("chat");
+
+  const empty = chat.querySelector(".empty");
+  if(empty) empty.remove();
+
+  const div = document.createElement("div");
+
+  div.className = "msg " + role;
+
+  div.textContent = text;
+
+  chat.appendChild(div);
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+
+function askAI(){
+
+  const q = document.getElementById("question").value.trim();
+
+  if(!q){
+    setStatus("Please enter a question first.");
+    return;
+  }
+
+  addMessage("user", q);
+
+  history.push({
+    role:"user",
+    content:q
+  });
+
+  document.getElementById("question").value = "";
+
+  setStatus("🔎 Searching your notes and preparing the answer...");
+
+  Android.ask(
+    q,
+    currentMode,
+    JSON.stringify(history)
+  );
+}
+
+
+function quickAsk(q){
+
+  document.getElementById("question").value = q;
+
+  askAI();
+}
+
+
+function clearChat(){
+
+  history = [];
+
+  document.getElementById("chat").innerHTML =
+    '<div class="empty">Your questions and AI answers will appear here.</div>';
+
+  setStatus("Conversation cleared.");
+}
+
+
+window.onStatus = function(s){
+
+  const j = JSON.parse(s);
+
+  if(!j.configured){
+    setStatus("⚠️ Add your OpenAI API key above.");
+    return;
+  }
+
+  if(j.ready){
+    setStatus("✅ AI + PDF search is ready.");
+    return;
+  }
+
+  if(j.pdf || j.bundled){
+    setStatus("📄 PDF selected. Tap Prepare AI Notes.");
+    return;
+  }
+
+  setStatus("✅ API key is configured.");
+};
+
+
+window.onProgress = function(s){
+  setStatus(s);
+};
+
+
+window.onSetup = function(s){
+
+  const j = JSON.parse(s);
+
+  if(j.ok){
+    setStatus("✅ PDF indexed. AI is ready to answer from your notes.");
+  }else{
+    setStatus("❌ " + j.error);
+  }
+};
+
+
+window.onAnswer = function(s){
+
+  const j = JSON.parse(s);
+
+  if(j.ok){
+
+    addMessage("assistant", j.text);
+
+    history.push({
+      role:"assistant",
+      content:j.text
+    });
+
+    setStatus("✅ Answer ready.");
+
+  }else{
+
+    addMessage("assistant", "Error: " + j.error);
+
+    setStatus("❌ " + j.error);
+  }
+};
+
+
 Android.status();
-</script></body></html>
+
+</script>
+
+</body>
+</html>
